@@ -1,7 +1,62 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Math Duel</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
+        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; }
+        button { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; margin: 10px; }
+        input { padding: 10px; font-size: 18px; width: 100px; text-align: center; }
+        .hidden { display: none; }
+    </style>
+</head>
 <body>
-  <h1>Math Duel is Warming Up!</h1>
-  <p>If you see this, the Render connection is working.</p>
+
+    <div id="landing" class="box">
+        <h1>Math Duel</h1>
+        <button onclick="createGame()">Create New Game</button>
+        <hr>
+        <input type="text" id="roomInput" placeholder="CODE">
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+
+    <div id="lobby" class="box hidden">
+        <h1>Room: <span id="displayRoomCode"></span></h1>
+        <h3>You are: <span id="displayName"></span></h3>
+        <div id="playerList"></div>
+        <p>Waiting for players (2-4)...</p>
+        <button id="startBtn" class="hidden">Start Game</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentRoom = "";
+
+        function createGame() {
+            socket.emit('createRoom');
+        }
+
+        function joinGame() {
+            const code = document.getElementById('roomInput').value;
+            socket.emit('joinRoom', code);
+        }
+
+        socket.on('roomJoined', (data) => {
+            currentRoom = data.roomId;
+            document.getElementById('landing').classList.add('hidden');
+            document.getElementById('lobby').classList.remove('hidden');
+            document.getElementById('displayRoomCode').innerText = data.roomId;
+            document.getElementById('displayName').innerText = data.name;
+            if (data.isHost) document.getElementById('startBtn').classList.remove('hidden');
+        });
+
+        socket.on('updatePlayers', (players) => {
+            const list = players.map(p => `<li>${p.name}</li>`).join('');
+            document.getElementById('playerList').innerHTML = `<ul>${list}</ul>`;
+        });
+
+        socket.on('error', (msg) => alert(msg));
+    </script>
 </body>
 </html>
